@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#163d37" />
+    <title>Devpool | Gestão de usuários</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="Devpool, início"
+        ><span class="brand-icon">d.</span>devpool<span class="brand-dot">®</span></a
+      >
+      <p class="sidebar-caption">ESPAÇO DE TRABALHO</p>
+      <a class="nav-item" href="/" aria-current="page"
+        ><span aria-hidden="true">◉</span> Usuários
+        <span class="nav-arrow" aria-hidden="true">↗</span></a
+      >
+      <div class="sidebar-bottom">
+        <span class="connection-dot"></span> Ambiente local
+        <p>Gestão simples. Dados organizados.</p>
+      </div>
+    </aside>
+    <main>
+      <header class="topbar">
+        <span>Workspace <span class="crumb">/</span> <strong>Usuários</strong></span
+        ><span class="workspace-badge">D <span>Devpool</span></span>
+      </header>
+      <div class="content">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">PESSOAS & ACESSOS</p>
+            <h1>Gestão de usuários<span>.</span></h1>
+            <p class="subtitle">Organize sua equipe em um só lugar.</p>
+          </div>
+          <button id="new-user" class="button primary">
+            <span aria-hidden="true">+</span> Novo usuário
+          </button>
+        </div>
+        <section class="stats" aria-label="Resumo dos usuários">
+          <article class="stat">
+            <div>
+              <p>Total de usuários</p>
+              <strong id="total-count">—</strong>
+            </div>
+            <span class="stat-icon" aria-hidden="true">◎</span><small>Todos os cadastros</small>
+          </article>
+          <article class="stat">
+            <div>
+              <p>Usuários ativos</p>
+              <strong id="active-count">—</strong>
+            </div>
+            <span class="stat-icon green" aria-hidden="true">↗</span
+            ><small><span class="dot active"></span> Disponíveis na equipe</small>
+          </article>
+          <article class="stat">
+            <div>
+              <p>Usuários inativos</p>
+              <strong id="inactive-count">—</strong>
+            </div>
+            <span class="stat-icon" aria-hidden="true">◷</span
+            ><small><span class="dot inactive"></span> Cadastros desativados</small>
+          </article>
+        </section>
+        <section class="panel" aria-labelledby="team-title">
+          <div class="panel-heading">
+            <div>
+              <h2 id="team-title">Sua equipe <span id="team-count" class="count-badge">0</span></h2>
+              <p>Consulte e gerencie os usuários cadastrados.</p>
+            </div>
+            <button id="reload" class="button subtle" aria-label="Atualizar lista">
+              ↻ <span>Atualizar</span>
+            </button>
+          </div>
+          <div class="toolbar">
+            <label class="search"
+              ><span aria-hidden="true">⌕</span
+              ><input
+                id="search"
+                type="search"
+                placeholder="Buscar por nome, e-mail ou login"
+                aria-label="Buscar usuários" /></label
+            ><label class="filter"
+              ><span>Situação</span
+              ><select id="status-filter">
+                <option value="all">Todas</option>
+                <option value="active">Ativos</option>
+                <option value="inactive">Inativos</option>
+              </select></label
+            >
+          </div>
+          <div id="list-error" class="list-error" role="alert" hidden></div>
+          <p id="loading" class="state" role="status" hidden>Carregando usuários…</p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">USUÁRIO</th>
+                  <th scope="col">LOGIN</th>
+                  <th scope="col">SITUAÇÃO</th>
+                  <th scope="col">CADASTRO</th>
+                  <th scope="col" class="actions-heading">AÇÕES</th>
+                </tr>
+              </thead>
+              <tbody id="user-rows"></tbody>
+            </table>
+          </div>
+          <div id="empty" class="empty" hidden>
+            <span class="empty-icon" aria-hidden="true">◎</span>
+            <h3>Nenhum usuário por aqui</h3>
+            <p id="empty-description">Comece cadastrando a primeira pessoa da equipe.</p>
+          </div>
+          <footer class="table-footer">
+            <span id="result-count">Aguardando dados</span
+            ><span>Cadastros locais <span class="connection-dot"></span></span>
+          </footer>
+        </section>
+        <footer class="page-footer">
+          <span>DEVPOOL <span class="footer-separator">/</span> GESTÃO DE USUÁRIOS</span
+          ><span>Feito para manter tudo em ordem.</span>
+        </footer>
+      </div>
+    </main>
+    <dialog id="user-dialog" aria-labelledby="form-title">
+      <form id="user-form" novalidate>
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">SUA EQUIPE</p>
+            <h2 id="form-title">Novo usuário</h2>
+          </div>
+          <button id="close-form" type="button" class="icon-button" aria-label="Fechar formulário">
+            ×
+          </button>
+        </div>
+        <p id="form-description" class="dialog-description">
+          Preencha os dados para adicionar uma pessoa à equipe.
+        </p>
+        <div id="form-error" class="form-error" role="alert" hidden></div>
+        <label class="field"
+          >Nome completo
+          <input
+            name="name"
+            id="name"
+            autocomplete="name"
+            required
+            minlength="3"
+            maxlength="254"
+            placeholder="Ex.: Maria Oliveira"
+            aria-describedby="error-name" /><small id="error-name" class="field-error"></small
+        ></label>
+        <label class="field"
+          >E-mail
+          <input
+            name="email"
+            id="email"
+            type="email"
+            autocomplete="email"
+            required
+            maxlength="254"
+            placeholder="nome@empresa.com.br"
+            aria-describedby="error-email" /><small id="error-email" class="field-error"></small
+        ></label>
+        <label class="field"
+          >Login
+          <input
+            name="login"
+            id="login"
+            autocomplete="off"
+            required
+            minlength="3"
+            maxlength="254"
+            placeholder="Ex.: maria.oliveira"
+            aria-describedby="error-login" /><small id="error-login" class="field-error"></small
+        ></label>
+        <label class="field"
+          >Senha
+          <input
+            name="password"
+            id="password"
+            type="password"
+            autocomplete="new-password"
+            required
+            minlength="8"
+            aria-describedby="password-hint error-password" /><small id="password-hint"
+            >Use pelo menos 8 caracteres.</small
+          ><small id="error-password" class="field-error"></small
+        ></label>
+        <label class="checkbox-field"
+          ><input name="active" id="active" type="checkbox" checked /><span
+            >Usuário ativo<small>Disponível para fazer parte da equipe.</small></span
+          ></label
+        >
+        <div class="dialog-actions">
+          <button id="cancel-form" type="button" class="button secondary">Cancelar</button
+          ><button id="save-user" type="submit" class="button primary">Cadastrar usuário</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="delete-dialog" aria-labelledby="delete-title">
+      <div class="delete-content">
+        <span class="delete-symbol" aria-hidden="true">!</span>
+        <h2 id="delete-title">Excluir usuário?</h2>
+        <p id="delete-description"></p>
+        <p class="delete-warning">Esta ação é permanente e não pode ser desfeita.</p>
+        <div id="delete-error" class="form-error" role="alert" hidden></div>
+        <div class="dialog-actions">
+          <button id="cancel-delete" class="button secondary">Cancelar</button
+          ><button id="confirm-delete" class="button danger">Excluir usuário</button>
+        </div>
+      </div>
+    </dialog>
+    <div id="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>
