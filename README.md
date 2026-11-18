@@ -1,124 +1,101 @@
-# Devpool - Gestão de usuários
+# Devpool - Gestão de Usuários
 
-Aplicação do desafio técnico full-stack: CRUD de usuários com Node.js 24,
-SQLite e frontend HTML, CSS e JavaScript puro. Não utiliza API externa.
+Aplicação full-stack do desafio técnico: CRUD de usuários com API REST em Node.js, banco SQLite e frontend em HTML, CSS e JavaScript puro.
 
-## Tecnologias e arquitetura
+## Tecnologias
 
-- Node.js 24.x (validado com 24.22.1), módulos ES e servidor HTTP nativo.
-- SQLite integrado ao Node (`node:sqlite`), sem servidor de banco separado.
-- BCrypt por `bcryptjs` 3.0.2, com custo 12 e salt gerado pela biblioteca.
-- Frontend sem frameworks, CDNs, fontes externas ou dependência de internet.
-- Testes pela ferramenta nativa `node:test`.
+**Backend**
+- Node.js 24 ou superior, com módulos ES e servidor HTTP nativo (sem framework)
+- SQLite integrado ao Node (`node:sqlite`), sem precisar instalar banco separado
+- `bcryptjs` para o hash das senhas (BCrypt, custo 12)
+- Testes com a ferramenta nativa `node:test`
+
+**Frontend**
+- HTML, CSS e JavaScript puro (Vanilla JS), sem frameworks nem CDNs
+- O próprio backend entrega a tela, então basta um servidor
+
+## Arquitetura
 
 ```text
 Navegador (index.html + public/app.js + public/style.css)
     -> HTTP / JSON
-src/app.js                 rotas e status HTTP
-    -> src/users/service.js       regras e hash
-        -> src/users/validation.js validação
-        -> src/users/repository.js SQL parametrizado
-            -> src/database.js    arquivo SQLite no disco local
+src/app.js                      rotas e status HTTP
+    -> src/users/service.js     regras de negócio e hash da senha
+        -> src/users/validation.js   validação dos dados
+        -> src/users/repository.js   SQL parametrizado
+            -> src/database.js       arquivo SQLite
 ```
 
-O backend também entrega a tela. Não é necessário abrir dois servidores.
-O navegador nunca acessa o banco, os arquivos internos ou o hash de senha.
+O navegador nunca acessa o banco diretamente. Toda operação passa pela API REST.
 
-## Instalar e executar no Windows
+## Como executar
 
-Você já informou Node 24.22.1 e npm 11.19.1, suficientes para este projeto.
-Não é necessário instalar SQLite separadamente.
-
-Abra o PowerShell na pasta do projeto. No computador com o X: mapeado:
+Pré-requisito: Node.js 24 ou superior (`node -v` para conferir).
 
 ```powershell
-Set-Location 'C:\Desenvolvimento\devpool'
 npm ci
 Copy-Item .env.example .env
 npm start
 ```
 
-Copie `.env.example` somente na primeira configuração. Preserve um `.env`
-existente com ajustes próprios. Abra **http://localhost:3101** no mesmo
-computador que está executando o Node. Não abra o HTML por duplo clique.
-Use Ctrl+C para encerrar. Para iniciar novamente, basta executar `npm start`.
-Para desenvolvimento com reinício ao salvar: `npm run dev`.
+Depois abra **http://localhost:3101** no navegador.
 
-### Porta e acesso pela rede
+- Para encerrar o servidor: `Ctrl+C`
+- Para reiniciar automaticamente ao salvar arquivos: `npm run dev`
+- Não abra o `index.html` com duplo clique. Ele precisa ser acessado pelo servidor.
 
-A porta padrão é **3101**. A porta 3000 é rejeitada na configuração,
-porque pertence ao outro projeto. Antes de iniciar no servidor, confira:
+No Linux/macOS, use `cp .env.example .env` no lugar de `Copy-Item`.
 
-```powershell
-Get-NetTCPConnection -State Listen -LocalPort 3101 -ErrorAction SilentlyContinue
-```
+### Configuração (`.env`)
 
-Se houver um processo nessa porta, escolha outra porta no `.env`.
-O programa também informa `EADDRINUSE` sem encerrar outros processos.
-Por padrão, `HOST=127.0.0.1` permite acesso apenas no próprio computador.
-Para uso pela rede interna, ajuste `.env`:
+| Variável | Para que serve | Padrão |
+| --- | --- | --- |
+| `PORT` | Porta do servidor | `3101` |
+| `HOST` | Endereço de escuta | `127.0.0.1` |
+| `DATA_DIR` | Pasta onde fica o arquivo do banco | pasta local do usuário |
+| `CORS_ORIGINS` | Origens extras permitidas (separadas por vírgula) | vazio |
 
-```dotenv
-HOST=0.0.0.0
-PORT=3101
-DATA_DIR=C:/Desenvolvimento/devpool-data
-```
+O caminho do banco aparece no terminal ao iniciar. Ele não vai para o repositório.
 
-### Banco e backup
-
-Sem `DATA_DIR`, o arquivo fica em `%LOCALAPPDATA%\Devpool\data\devpool.sqlite`
-no Windows, no perfil de quem iniciou o Node. Em outros sistemas, usa
-`~/.local/share/Devpool/data/devpool.sqlite`. O caminho real é mostrado ao iniciar.
-É possível definir um diretório local próprio no `.env`.
-
-Não aponte o banco para X:, unidade mapeada ou compartilhamento SMB.
-O código pode ficar na rede, mas o arquivo SQLite deve ficar em disco local.
-Ao fechar o navegador ou reiniciar o Node, os dados continuam no arquivo.
-Outro usuário do Windows pode ter outro diretório padrão; para compartilhar
-a mesma base entre execuções, mantenha `DATA_DIR` e o usuário de execução.
-
-Para um backup simples, encerre este Node com Ctrl+C, copie o arquivo
-`devpool.sqlite` para um local seguro e inicie novamente. O banco contém
-dados pessoais e hashes; não o coloque no repositório público.
-
-## Contrato da API
+## API
 
 | Método | Caminho | Resultado |
 | --- | --- | --- |
-| POST | `/users` | Cria usuário; 201, objeto e cabeçalho Location |
-| GET | `/users` | Lista completa; 200 e array |
-| GET | `/users/{id}` | Detalhes; 200 ou 404 |
-| PUT | `/users/{id}` | Substitui campos editáveis; 200 ou 404 |
-| PATCH | `/users/{id}` | Altera somente campos enviados; 200 ou 404 |
-| DELETE | `/users/{id}` | Exclusão física; 204 sem corpo ou 404 |
-| OPTIONS | rotas da API | Preflight CORS; 204 |
-| GET | `/health` | Verificação do processo; 200 |
+| POST | `/users` | Cria usuário. Retorna 201 e o usuário com `id` |
+| GET | `/users` | Lista todos. Retorna 200 |
+| GET | `/users/{id}` | Detalhe. Retorna 200 ou 404 |
+| PUT | `/users/{id}` | Substitui os campos editáveis. Retorna 200 ou 404 |
+| PATCH | `/users/{id}` | Altera só os campos enviados. Retorna 200 ou 404 |
+| DELETE | `/users/{id}` | Exclui. Retorna 204 ou 404 |
+| GET | `/health` | Verifica se o servidor está no ar |
 
-Envie corpos JSON com `Content-Type: application/json`.
+Envie o corpo em JSON com `Content-Type: application/json`.
 
-### Campos e decisões
+### Campos e regras
 
-- `id`: UUID gerado no servidor; não é aceito no corpo enviado pelo cliente.
-- `name`: texto obrigatório, ao menos 3 caracteres após remover espaços das extremidades.
-- `email`: obrigatório e válido; normalizado para minúsculas e único.
-- `login`: obrigatório, ao menos 3 caracteres, normalizado para minúsculas e único.
-- `password`: obrigatório ao criar e em PUT; mínimo 8 caracteres e máximo 72 bytes UTF-8,
-  limite do BCrypt. A senha não é aparada nem truncada.
-- `active`: booleano, padrão `true` no cadastro e em PUT quando omitido.
-- `created_at` e `updated_at`: datas ISO geradas pelo servidor, não editáveis pelo cliente.
-- Campos desconhecidos, tipos errados e dados inválidos retornam **400** com
-  `message` e um objeto `errors` por campo. Duplicidade também retorna 400,
-  conforme o requisito do desafio. A referência ao nome `password` em um
-  erro de validação nunca inclui a senha nem seu hash.
-- PATCH permite omitir senha e demais campos: mantém os valores atuais.
-  Uma senha enviada vazia é inválida; a tela omite esse campo ao deixá-lo vazio na edição.
-  PATCH vazio também é inválido. PUT exige todos os campos obrigatórios.
-- Exclusão é física: simplifica a demonstração do CRUD. Inativar pelo formulário
-  mantém o cadastro e não equivale a excluí-lo.
-- Não há tela de autenticação ou perfis de acesso: não foram pedidos pelo desafio.
-  O campo login é um dado do usuário; o aplicativo foi preparado para uso local/interno.
+- `id`: UUID gerado pelo servidor. Não é aceito no corpo da requisição.
+- `name`: obrigatório, mínimo de 3 caracteres (sem contar espaços nas pontas).
+- `email`: obrigatório, formato válido e único. Guardado em minúsculas.
+- `login`: obrigatório, mínimo de 3 caracteres e único. Guardado em minúsculas.
+- `password`: obrigatório, mínimo de 8 caracteres. Guardada com hash BCrypt e **nunca** devolvida pela API.
+- `active`: booleano. Padrão `true` quando não informado.
+- `created_at` e `updated_at`: datas geradas pelo servidor.
 
-### Exemplos de chamadas no PowerShell
+Dados ausentes ou inválidos retornam **400** com um JSON explicativo:
+
+```json
+{
+  "message": "Revise os campos informados.",
+  "errors": {
+    "name": "Use pelo menos 3 caracteres.",
+    "email": "Informe um e-mail válido."
+  }
+}
+```
+
+E-mail ou login repetidos também retornam 400. Rotas inexistentes retornam 404.
+
+### Exemplos de chamadas (PowerShell)
 
 ```powershell
 $base = 'http://localhost:3101'
@@ -129,6 +106,7 @@ $body = @{
   password = 'Senha123!'
   active = $true
 } | ConvertTo-Json
+
 $user = Invoke-RestMethod "$base/users" -Method Post -ContentType 'application/json' -Body $body
 Invoke-RestMethod "$base/users"
 Invoke-RestMethod "$base/users/$($user.id)"
@@ -136,93 +114,68 @@ Invoke-RestMethod "$base/users/$($user.id)" -Method Patch -ContentType 'applicat
 Invoke-RestMethod "$base/users/$($user.id)" -Method Delete
 ```
 
-Exemplo cURL (Linux/macOS ou terminal com sintaxe equivalente):
+### Exemplo com cURL
 
 ```sh
 curl -i -X POST http://localhost:3101/users \
   -H 'Content-Type: application/json' \
   -d '{"name":"Maria Oliveira","email":"maria@example.com","login":"maria","password":"Senha123!"}'
+
 curl -i http://localhost:3101/users
 ```
 
-O JSON de um usuário retornado contém apenas `id`, `name`, `email`, `login`,
-`active`, `created_at` e `updated_at`. Senha e hash nunca são selecionados
-pelas consultas de apresentação.
+### Formato do JSON retornado
 
-### CORS e tratamento de erros
+```json
+{
+  "id": "ea659411-c981-447e-a6cd-28e097521452",
+  "name": "Maria Oliveira",
+  "email": "maria@example.com",
+  "login": "maria",
+  "active": true,
+  "created_at": "2026-11-18T12:00:14.310Z",
+  "updated_at": "2026-11-18T12:00:14.310Z"
+}
+```
 
-A tela entregue usa a mesma origem da API. Para outro frontend HTTP,
-adicione a origem exata em `CORS_ORIGINS` no `.env`, separando várias por vírgula.
-Exemplo: `CORS_ORIGINS=http://localhost:5500,http://127.0.0.1:5500`.
-A API responde ao preflight e aceita os métodos e Content-Type necessários.
-Origens não autorizadas recebem 403; isso não substitui autenticação.
-Corpos maiores que 16 KB ou JSON inválido recebem 400. Rotas inexistentes
-recebem 404, métodos incompatíveis recebem 405 e falhas internas recebem
-500 com mensagem amigável, sem detalhes de SQL ou dados sensíveis.
+## CORS
 
-## Testes e verificação manual
+A tela usa a mesma origem da API, então funciona sem configuração extra. Para usar outro frontend, adicione a origem em `CORS_ORIGINS` no `.env`:
+
+```dotenv
+CORS_ORIGINS=http://localhost:5500,http://127.0.0.1:5500
+```
+
+A API responde ao preflight (`OPTIONS`) das origens permitidas. Origens não autorizadas recebem 403.
+
+## Decisões de projeto
+
+- **Exclusão física:** o registro é removido de vez. Foi escolhido por simplicidade na demonstração do CRUD. Para apenas desativar um usuário, o formulário de edição altera o campo `active`.
+- **UUID como identificador:** não é sequencial, então não revela a quantidade de usuários nem permite adivinhar IDs.
+- **Validação em duas camadas:** o formulário valida no navegador para dar resposta rápida, e a API valida de novo, porque a tela pode ser ignorada por quem chama a API diretamente.
+- **Senha com BCrypt:** o hash é irreversível e nunca é selecionado nas consultas de apresentação.
+- Não há autenticação nem perfis de acesso, pois não foram pedidos no desafio.
+
+## Testes
 
 ```powershell
 npm test
 ```
 
-São 22 testes automatizados com banco isolado e portas aleatórias. Cobrem
-CRUD, UUID, status, hash BCrypt, campos, duplicidade, PUT/PATCH, CORS,
-tratamento de JSON, isolamento de arquivos e persistência após reabrir o banco.
-Não usam a base de dados da aplicação.
+São 22 testes automatizados, com banco isolado e portas aleatórias, que não alteram os dados da aplicação. Cobrem CRUD, status HTTP, UUID, hash, validações, duplicidade, PUT e PATCH, CORS, tratamento de JSON inválido e persistência.
 
-Também foram verificados no navegador: cadastro, edição sem trocar senha,
-inativação, busca, filtros, cancelamento e confirmação de exclusão,
-validação de duplicidade, carregamento, falha e recuperação de consulta,
-renderização segura de texto e apresentação em 1440 px e 390 px.
-Para repetir manualmente, percorra esses fluxos e reinicie o Node para
-confirmar que um cadastro permanece salvo.
+## Estrutura de pastas
 
-## Arquivos e guia de estudo
-
-O PDF `output/pdf/Guia_de_Estudo_Devpool.pdf` explica a arquitetura, cada
-arquivo, os blocos de código por linhas e exercícios de pequenas alterações.
-As linhas se referem à versão entregue; editar ou formatar arquivos pode alterá-las.
-Ele também contém um manifesto com SHA-256 para conferir a versão dos arquivos.
-
-`package-lock.json` fixa as dependências instaladas por `npm ci`.
-Arquivos em `node_modules` pertencem à biblioteca, não ao código autoral
-do aplicativo; não devem ser editados nem publicados no Git.
-
-## Entrega em repositório público
-
-O PDF do desafio também exige um repositório público GitHub ou GitLab.
-Os arquivos estão preparados para isso, mas criar a pasta compartilhada
-não publica um repositório. Escolha o destino na sua conta e publique a
-versão revisada, incluindo este README, o código, os testes e o PDF de estudo.
-Confira que `.env`, banco, logs e `node_modules` ficaram de fora.
-Não é necessário contratar hospedagem para apresentar o sistema localmente.
-
-### Publicar no GitHub pela primeira vez
-
-1. Entre na sua conta GitHub, escolha **New repository**, dê um nome como
-   `devpool`, marque **Public** e crie o repositório vazio. Não gere outro README.
-2. Se ainda não tiver Git no computador, instale o Git para Windows pelo
-   site oficial https://git-scm.com/downloads/win. Ele não é necessário para
-   executar o sistema, somente para versionar e publicar.
-3. Abra o terminal na pasta deste projeto e execute:
-
-```powershell
-git init -b main
-git add .
-git status
-git commit -m "Implementa desafio de gestao de usuarios"
-git remote add origin https://github.com/SEU_USUARIO/devpool.git
-git push -u origin main
+```text
+index.html            estrutura da tela
+public/app.js         lógica da tela (chamadas à API)
+public/style.css      visual
+src/server.js         inicia o servidor
+src/app.js            rotas e status HTTP
+src/config.js         leitura do .env
+src/database.js       conexão e criação da tabela
+src/errors.js         erros padronizados
+src/http.js           utilitários HTTP (JSON, CORS)
+src/users/            validação, regras e acesso ao banco
+tests/api.test.js     testes automatizados
 ```
-
-Substitua `SEU_USUARIO` e o nome do repositório pela URL real criada no passo 1.
-Antes do commit, confira em `git status` que `.env`, banco e `node_modules`
-não aparecem. Se Git pedir identidade, configure seu nome e e-mail de autoria
-nessa pasta com `git config user.name "Seu nome"` e
-`git config user.email "seu-email"`. Conclua a autenticação do GitHub pelo
-fluxo oferecido pelo Git; não grave tokens no código ou no README.
-
-Depois de publicar, abra a URL em uma janela sem login para confirmar que
-o repositório está público e compartilhe essa URL com a banca. No GitLab,
-o procedimento é equivalente: crie projeto público vazio e use a URL dele.
